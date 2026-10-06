@@ -1,7 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { gsap } from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useLang } from "@/lib/lang";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export const projects = [
   {
@@ -146,6 +151,7 @@ export default function Work() {
 
   const [activeFilter, setActiveFilter] = useState("Tous");
   const [search, setSearch] = useState("");
+  const root = useRef(null);
 
   const isEnglish = lang === "en";
 
@@ -173,8 +179,45 @@ export default function Work() {
     });
   }, [activeFilter, search, isEnglish]);
 
+  // Animation des cartes projets à l'entrée dans le viewport.
+  // Elle se rejoue proprement lorsqu'un filtre ou une recherche modifie la liste.
+  useGSAP(
+    () => {
+      const cards = root.current?.querySelectorAll(".work-project-card");
+      if (!cards?.length) return;
+
+      gsap.fromTo(
+        cards,
+        {
+          y: 34,
+          opacity: 0,
+          scale: 0.985,
+        },
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          duration: 0.65,
+          stagger: 0.09,
+          ease: "power3.out",
+          clearProps: "transform,opacity",
+          scrollTrigger: {
+            trigger: root.current,
+            start: "top 82%",
+            once: true,
+          },
+        }
+      );
+    },
+    {
+      scope: root,
+      dependencies: [activeFilter, search, isEnglish],
+      revertOnUpdate: true,
+    }
+  );
+
   return (
-    <section id="work" className="relative py-16 sm:py-24 lg:py-28">
+    <section ref={root} id="work" className="relative py-16 sm:py-24 lg:py-28">
       <div className="mx-auto max-w-shell px-4 sm:px-6">
         {/* HEADER */}
         <div className="mb-7 sm:mb-10">
@@ -248,7 +291,7 @@ export default function Work() {
             return (
               <article
                 key={project.id}
-                className="group flex min-w-0 flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-signal/30 hover:shadow-lift sm:rounded-2xl"
+                className="work-project-card group flex min-w-0 flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-signal/30 hover:shadow-lift sm:rounded-2xl"
               >
                 {/* PASTEL HEADER */}
                 <div
